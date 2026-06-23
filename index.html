@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>대시보드</title>
+  <style>
+    /* ── 변수 ───────────────────────────────────────── */
+    :root {
+      --bg: #0c0c0c;
+      --surface: #141414;
+      --surface2: #1c1c1c;
+      --border: #2a2a2a;
+      --text: #e8e8e8;
+      --muted: #666;
+      --accent: #4f8ef7;
+      --accent-dim: rgba(79,142,247,.12);
+      --green: #3ecf8e;
+      --yellow: #f0b72f;
+      --red: #f06060;
+      --radius: 10px;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    }
+
+    /* ── 리셋 ───────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      padding: 32px 24px 60px;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; border: none; background: none; color: inherit; font: inherit; }
+    input, textarea {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font: inherit;
+      outline: none;
+      padding: 8px 12px;
+      width: 100%;
+    }
+    input:focus, textarea:focus { border-color: var(--accent); }
+    textarea { resize: vertical; }
+
+    /* ── 레이아웃 ────────────────────────────────────── */
+    .wrapper {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    /* ── 헤더 ───────────────────────────────────────── */
+    .top-bar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 40px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .greeting { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+    .title { font-size: 26px; font-weight: 700; letter-spacing: -.5px; }
+    .clock-block { text-align: right; }
+    #clock {
+      font-family: var(--mono);
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    #date-str { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* ── 섹션 공통 ──────────────────────────────────── */
+    .section { margin-bottom: 36px; }
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    /* ── 링크 카드 그리드 ───────────────────────────── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px;
+    }
+    .link-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 18px;
+      transition: border-color .15s, background .15s, transform .12s;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+    .link-card:hover {
+      border-color: var(--accent);
+      background: var(--surface2);
+      transform: translateY(-2px);
+    }
+    .link-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--card-color, var(--accent));
+      opacity: 0;
+      transition: opacity .15s;
+    }
+    .link-card:hover::before { opacity: 1; }
+    .link-card .icon { font-size: 22px; line-height: 1; }
+    .link-card .name {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .link-card .desc {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .link-card .badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 20px;
+      align-self: flex-start;
+      margin-top: auto;
+    }
+    .badge-live { background: rgba(62,207,142,.15); color: var(--green); }
+    .badge-dev  { background: rgba(240,183,47,.15);  color: var(--yellow); }
+    .badge-soon { background: rgba(102,102,102,.15); color: var(--muted); }
+
+    /* 카드 색상 */
+    .c-blue   { --card-color: #4f8ef7; }
+    .c-green  { --card-color: #3ecf8e; }
+    .c-purple { --card-color: #a78bfa; }
+    .c-orange { --card-color: #fb923c; }
+    .c-pink   { --card-color: #f472b6; }
+    .c-muted  { --card-color: #666; }
+
+    /* ── 하단 2열 ────────────────────────────────────── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 620px) {
+      .two-col { grid-template-columns: 1fr; }
+    }
+
+    /* ── 패널 공통 ──────────────────────────────────── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+    }
+    .panel-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    /* ── 메모 ───────────────────────────────────────── */
+    #memo-area {
+      min-height: 120px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .save-btn {
+      margin-top: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      transition: background .12s, border-color .12s;
+    }
+    .save-btn:hover { background: var(--accent-dim); border-color: var(--accent); }
+    .saved-msg {
+      font-size: 11px;
+      color: var(--green);
+      margin-top: 6px;
+      opacity: 0;
+      transition: opacity .3s;
+    }
+    .saved-msg.show { opacity: 1; }
+
+    /* ── 할 일 목록 ─────────────────────────────────── */
+    .todo-add {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .todo-add input { font-size: 13px; }
+    .add-btn {
+      flex-shrink: 0;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 16px;
+      width: 34px;
+      height: 34px;
+      border-radius: 6px;
+      display: grid;
+      place-items: center;
+      transition: opacity .12s;
+    }
+    .add-btn:hover { opacity: .85; }
+
+    #todo-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+    .todo-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: var(--surface2);
+    }
+    .todo-item input[type=checkbox] {
+      width: 15px; height: 15px;
+      flex-shrink: 0;
+      accent-color: var(--accent);
+      padding: 0;
+    }
+    .todo-item span {
+      flex: 1;
+      transition: color .15s;
+    }
+    .todo-item.done span {
+      color: var(--muted);
+      text-decoration: line-through;
+    }
+    .del-btn {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1;
+      padding: 0 2px;
+      transition: color .12s;
+    }
+    .del-btn:hover { color: var(--red); }
+    .empty-msg {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      padding: 16px 0;
+    }
+
+    /* ── 푸터 ───────────────────────────────────────── */
+    .footer {
+      text-align: center;
+      font-size: 11px;
+      color: #333;
+      margin-top: 48px;
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- 헤더 -->
+  <header class="top-bar">
+    <div>
+      <div class="greeting" id="greeting">안녕하세요 👋</div>
+      <div class="title">대시보드</div>
+    </div>
+    <div class="clock-block">
+      <div id="clock">--:--:--</div>
+      <div id="date-str"></div>
+    </div>
+  </header>
+
+  <!-- 프로젝트 링크 -->
+  <section class="section">
+    <div class="section-label">Projects</div>
+    <div class="card-grid" id="card-grid">
+
+      <a href="https://0oo0mu.github.io/oomu-blog/index.html" target="_blank" class="link-card c-blue">
+        <div class="icon">✍️</div>
+        <div class="name">Blog</div>
+        <div class="desc">개발 & 언어 학습 기록</div>
+        <span class="badge badge-live">Live</span>
+      </a>
+
+      <a href="https://ship-inspection-platform-khr9kzq2n-0oo0mus-projects.vercel.app/login" target="_blank" class="link-card c-green">
+        <div class="icon">🔍</div>
+        <div class="name">품질검사 플랫폼</div>
+        <div class="desc">AI 기반 선박 부품 품질검사 웹</div>
+        <span class="badge badge-live">Live</span>
+      </a>
+
+      <!-- 나중에 오답노트 페이지 완성 후 href 교체 -->
+      <a href="#" class="link-card c-purple">
+        <div class="icon">📝</div>
+        <div class="name">오답노트</div>
+        <div class="desc">실수 & 개념 정리 노트</div>
+        <span class="badge badge-soon">Soon</span>
+      </a>
+
+      <!-- 추가 슬롯 — 필요시 복사해서 사용 -->
+      <a href="#" class="link-card c-muted" id="add-card" style="border-style:dashed; justify-content: center; align-items:center; flex-direction:row; gap:8px; color:var(--muted);">
+        <span style="font-size:18px;">＋</span>
+        <span style="font-size:13px; font-weight:600;">추가</span>
+      </a>
+
+    </div>
+  </section>
+
+  <!-- 메모 + 할 일 -->
+  <div class="two-col">
+
+    <!-- 메모 -->
+    <div class="panel">
+      <div class="panel-title">📌 메모</div>
+      <textarea id="memo-area" placeholder="여기에 메모를 남겨두세요..."></textarea>
+      <button class="save-btn" onclick="saveMemo()">저장</button>
+      <div class="saved-msg" id="saved-msg">저장됨 ✓</div>
+    </div>
+
+    <!-- 할 일 -->
+    <div class="panel">
+      <div class="panel-title">✅ 할 일</div>
+      <div class="todo-add">
+        <input type="text" id="todo-input" placeholder="할 일 입력..." onkeydown="if(event.key==='Enter') addTodo()" />
+        <button class="add-btn" onclick="addTodo()">＋</button>
+      </div>
+      <ul id="todo-list"></ul>
+      <div class="empty-msg" id="empty-msg">할 일이 없어요 🎉</div>
+    </div>
+
+  </div>
+
+  <div class="footer">made with ❤️ — dashboard v1.0</div>
+</div>
+
+<script>
+  /* ── 시계 ─────────────────────────────────────────── */
+  const DAYS = ['일','월','화','수','목','금','토'];
+  function updateClock() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2,'0');
+    const m = String(now.getMinutes()).padStart(2,'0');
+    const s = String(now.getSeconds()).padStart(2,'0');
+    document.getElementById('clock').textContent = `${h}:${m}:${s}`;
+
+    const y = now.getFullYear();
+    const mo = now.getMonth()+1;
+    const d = now.getDate();
+    const day = DAYS[now.getDay()];
+    document.getElementById('date-str').textContent = `${y}.${String(mo).padStart(2,'0')}.${String(d).padStart(2,'0')} (${day})`;
+
+    // 인사말
+    const g = document.getElementById('greeting');
+    const hr = now.getHours();
+    if (hr < 6)       g.textContent = '새벽에도 열심히 하는군요 🌙';
+    else if (hr < 12) g.textContent = '좋은 아침이에요 ☀️';
+    else if (hr < 18) g.textContent = '좋은 오후에요 🌤️';
+    else              g.textContent = '수고 많았어요 🌙';
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  /* ── 메모 ─────────────────────────────────────────── */
+  const memoEl = document.getElementById('memo-area');
+  memoEl.value = localStorage.getItem('dashboard_memo') || '';
+
+  function saveMemo() {
+    localStorage.setItem('dashboard_memo', memoEl.value);
+    const msg = document.getElementById('saved-msg');
+    msg.classList.add('show');
+    setTimeout(() => msg.classList.remove('show'), 1500);
+  }
+
+  // Ctrl+S 로 저장
+  memoEl.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveMemo(); }
+  });
+
+  /* ── 할 일 ─────────────────────────────────────────── */
+  let todos = JSON.parse(localStorage.getItem('dashboard_todos') || '[]');
+
+  function saveTodos() {
+    localStorage.setItem('dashboard_todos', JSON.stringify(todos));
+  }
+
+  function renderTodos() {
+    const ul = document.getElementById('todo-list');
+    const empty = document.getElementById('empty-msg');
+    ul.innerHTML = '';
+    empty.style.display = todos.length === 0 ? 'block' : 'none';
+
+    todos.forEach((todo, i) => {
+      const li = document.createElement('li');
+      li.className = 'todo-item' + (todo.done ? ' done' : '');
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = todo.done;
+      cb.onchange = () => { todos[i].done = cb.checked; saveTodos(); renderTodos(); };
+
+      const span = document.createElement('span');
+      span.textContent = todo.text;
+
+      const del = document.createElement('button');
+      del.className = 'del-btn';
+      del.textContent = '×';
+      del.onclick = () => { todos.splice(i, 1); saveTodos(); renderTodos(); };
+
+      li.append(cb, span, del);
+      ul.appendChild(li);
+    });
+  }
+
+  function addTodo() {
+    const input = document.getElementById('todo-input');
+    const text = input.value.trim();
+    if (!text) return;
+    todos.unshift({ text, done: false });
+    saveTodos();
+    renderTodos();
+    input.value = '';
+  }
+
+  renderTodos();
+</script>
+</body>
+</html>
